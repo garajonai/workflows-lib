@@ -9,42 +9,45 @@ inputs:
       - npm
       - all
       - none
-  1password-token:
+  op-token:
     required: true
 outputs:
-  app-token:
+  token:
     value: ${{ steps.app-token.outputs.token }}
 
 runs:
   using: "composite"
   steps:
     - name: Configure 1Password Service Account
-      uses: 1password/load-secrets-action/configure@v1
+      uses: 1password/load-secrets-action/configure@v1.3.2
       with:
-        service-account-token: ${{ secrets.1password-token }}
+        service-account-token: ${{ inputs.op-token }}
 
     - name: Load Botanibit credentials
       id: load-docker-credentials
-      uses: 1password/load-secrets-action@v1
+      uses: 1password/load-secrets-action@v1.3.2
       with:
         export-env: true
       env:
-        APP_ID: "op://Garajonai/i4laqqebrw6kst33u3e6qvau34/App ID"
-        PRIVATE_KEY: op://Garajonai/i4laqqebrw6kst33u3e6qvau34/credential
+        APP_ID: "op://Garajonai/Botanibit GH_SVC/App ID"
+        PRIVATE_KEY: "op://Garajonai/Botanibit GH_SVC/private key"
 
     - uses: actions/create-github-app-token@v1
-      id: app-token
+      id: botanibit
       with:
         app-id: ${{ env.APP_ID }}
         private-key: ${{ env.PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
 
-    - if: ${{ inputs.stack == 'go' || inputs.stack == 'all' }}
-      env:
-        ACCESS_TOKEN: ${{ steps.app-token.outputs.token }}
+    - name: Set up Git with token for private go dependencies
+      shell: bash
+      if: ${{ inputs.stack == 'go' || inputs.stack == 'all' }}
       run: |
-        git config --global url."https://x-access-token:${ACCESS_TOKEN}@github.com/".insteadOf "https://github.com/"
+        git config --global url."https://x-access-token:${{ steps.botanibit.outputs.token }}@github.com/".insteadOf "https://github.com/"
 
-    - if: ${{ inputs.stack == 'npm' || inputs.stack == 'all' }}
+    - name: Creating .npmrc
+      shell: bash
+      if: ${{ inputs.stack == 'npm' || inputs.stack == 'all' }}
       run: |
         echo "@garajonai:registry=https://npm.pkg.github.com" >> .npmrc
-        echo "//npm.pkg.github.com/:_authToken=${{ steps.app-token.outputs.token }}" >> .npmrc
+        echo "//npm.pkg.github.com/:_authToken=${{ steps.botanibit.outputs.token }}" >> .npmrc
