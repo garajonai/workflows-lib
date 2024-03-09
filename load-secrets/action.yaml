@@ -1,58 +1,50 @@
 name: Load secrets
-on:
-  workflow_call:
-    inputs:
-      stack:
-        type: choice
-        description: 'The stack to run the job on (go, npm, all)'
-        default: all
-        options:
-          - go
-          - npm
-          - all
-          - none
-    secrets:
-      1password-token:
-        required: true
-    outputs:
-      app-token:
-        value: ${{ jobs.load-secrets.outputs.token }}
+inputs:
+  stack:
+    type: choice
+    description: 'The stack to run the job on (go, npm, all)'
+    default: all
+    options:
+      - go
+      - npm
+      - all
+      - none
+  1password-token:
+    required: true
+outputs:
+  app-token:
+    value: ${{ steps.app-token.outputs.token }}
 
-jobs:
-  load-secrets:
-    runs-on: ubuntu-latest
-    outputs:
-      token: ${{ steps.app-token.outputs.token }}
-    steps:
-      - name: Configure 1Password Service Account
-        uses: 1password/load-secrets-action/configure@v1
-        with:
-          service-account-token: ${{ secrets.1password-token }}
+runs:
+  using: "composite"
+  steps:
+    - name: Configure 1Password Service Account
+      uses: 1password/load-secrets-action/configure@v1
+      with:
+        service-account-token: ${{ secrets.1password-token }}
 
-      - name: Load Botanibit credentials
-        id: load-docker-credentials
-        uses: 1password/load-secrets-action@v1
-        with:
-          export-env: true
-        env:
-          APP_ID: "op://Garajonai/i4laqqebrw6kst33u3e6qvau34/App ID"
-          PRIVATE_KEY: op://Garajonai/i4laqqebrw6kst33u3e6qvau34/credential
+    - name: Load Botanibit credentials
+      id: load-docker-credentials
+      uses: 1password/load-secrets-action@v1
+      with:
+        export-env: true
+      env:
+        APP_ID: "op://Garajonai/i4laqqebrw6kst33u3e6qvau34/App ID"
+        PRIVATE_KEY: op://Garajonai/i4laqqebrw6kst33u3e6qvau34/credential
 
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ env.APP_ID }}
-          private-key: ${{ env.PRIVATE_KEY }}
+    - uses: actions/create-github-app-token@v1
+      id: app-token
+      with:
+        app-id: ${{ env.APP_ID }}
+        private-key: ${{ env.PRIVATE_KEY }}
 
-      - name: Set up Git with token for private go dependencies
-        if: ${{ inputs.stack == 'go' || inputs.stack == 'all' }}
-        env:
-          ACCESS_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          git config --global url."https://x-access-token:${ACCESS_TOKEN}@github.com/".insteadOf "https://github.com/"
+    - if: ${{ inputs.stack == 'go' || inputs.stack == 'all' }}
+      env:
+        ACCESS_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        git config --global url."https://x-access-token:${ACCESS_TOKEN}@github.com/".insteadOf "https://github.com/"
 
-      - name: Creating .npmrc
-        if: ${{ inputs.stack == 'npm' || inputs.stack == 'all' }}
-        run: |
-          echo "@garajonai:registry=https://npm.pkg.github.com" >> .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ steps.app-token.outputs.token }}" >> .npmrc
+    - if: ${{ inputs.stack == 'npm' || inputs.stack == 'all' }}
+      run: |
+        echo "@garajonai:registry=https://npm.pkg.github.com" >> .npmrc
+        echo "//npm.pkg.github.com/:_authToken=${{ steps.app-token.outputs.token }}" >> .npmrc
