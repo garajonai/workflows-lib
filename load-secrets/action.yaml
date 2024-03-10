@@ -38,6 +38,12 @@ runs:
         private-key: ${{ env.PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
 
+    - name: Set up Git name and email
+      shell: bash
+      run: |
+        git config --global user.name "botanibit[bot]"
+        git config --global user.email ${{env.APP_ID}}+botanibit[bot]@users.noreply.github.com
+
     - name: Set up Git with token for private go dependencies
       shell: bash
       if: ${{ inputs.stack == 'go' || inputs.stack == 'all' }}

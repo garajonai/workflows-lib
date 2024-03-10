@@ -28,7 +28,7 @@ runs:
     - name: Building new version
       if: ${{ inputs.stack == 'go' }}
       shell: bash
-      run: NEXT_VERSION=${{inputs.next_version}} make changelog
+      run: NEXT_VERSION=${{inputs.next-version}} make changelog
 
     - name: Retrieve version
       if: ${{ inputs.stack == 'go' }}
@@ -40,7 +40,7 @@ runs:
       if: ${{ inputs.stack == 'go' }}
       uses: devops-infra/action-pull-request@v0.5.5
       with:
-        github_token: ${{ steps.botanibit.outputs.token }}
+        github_token: ${{ inputs.token }}
         source_branch: changelog_${{ steps.vars.outputs.version }}
         target_branch: main
         title: |
