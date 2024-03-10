@@ -1,0 +1,67 @@
+name: "Release new version"
+on:
+  workflow_dispatch:
+    inputs:
+      next_version:
+        description: 'Next version to be released'
+        required: false
+        type: string
+permissions:
+  contents: write
+
+jobs:
+  changelog-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          fetch-tags: 'true'
+          fetch-depth: 0
+      - uses: fregante/setup-git-user@v2
+
+      - name: Set up Git with token for private go dependencies
+        env:
+          ACCESS_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${ACCESS_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install dependencies
+        run: go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
+
+      - name: Building new version
+        run: NEXT_VERSION=${{github.event.inputs.next_version}} make changelog
+
+      - name: Retrieve version
+        id: vars
+        run: echo "version=$(cat .version)" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        uses: devops-infra/action-pull-request@v0.5.5
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          source_branch: changelog_${{ steps.vars.outputs.version }}
+          target_branch: main
+          title: |
+            :memo: New release pending ${{ steps.vars.outputs.version }}
+          body: |
+            ## ${{ steps.vars.outputs.version }}
+            Please review, approve and merge the release
+
+            > [!NOTE]
+            > This is an **automated** pull request.
+            > **CHANGELOG.md** has been updated with the new release notes.
+          label: Release
+          draft: false

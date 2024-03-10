@@ -2,8 +2,8 @@ name: Load secrets
 inputs:
   stack:
     type: choice
-    description: 'The stack to run the job on (go, npm, all)'
-    default: all
+    description: 'The stack to run the job on (go, npm, all, none)'
+    default: none
     options:
       - go
       - npm
@@ -13,7 +13,7 @@ inputs:
     required: true
 outputs:
   token:
-    value: ${{ steps.app-token.outputs.token }}
+    value: ${{ steps.botanibit.outputs.token }}
 
 runs:
   using: "composite"
@@ -24,7 +24,6 @@ runs:
         service-account-token: ${{ inputs.op-token }}
 
     - name: Load Botanibit credentials
-      id: load-docker-credentials
       uses: 1password/load-secrets-action@v1.3.2
       with:
         export-env: true

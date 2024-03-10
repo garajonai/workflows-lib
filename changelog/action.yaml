@@ -1,0 +1,59 @@
+name: Changelog
+inputs:
+  stack:
+    type: choice
+    description: 'Generate CHANGELOG.md and release process'
+    options:
+      - go
+      - npm
+  next-version:
+    required: true
+  token:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup go
+      if: ${{ inputs.stack == 'go' }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Install dependencies
+      if: ${{ inputs.stack == 'go' }}
+      shell: bash
+      run: go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
+
+    - name: Building new version
+      if: ${{ inputs.stack == 'go' }}
+      shell: bash
+      run: NEXT_VERSION=${{inputs.next_version}} make changelog
+
+    - name: Retrieve version
+      if: ${{ inputs.stack == 'go' }}
+      shell: bash
+      id: vars
+      run: echo "version=$(cat .version)" >> $GITHUB_OUTPUT
+
+    - name: Create Pull Request
+      if: ${{ inputs.stack == 'go' }}
+      uses: devops-infra/action-pull-request@v0.5.5
+      with:
+        github_token: ${{ steps.botanibit.outputs.token }}
+        source_branch: changelog_${{ steps.vars.outputs.version }}
+        target_branch: main
+        title: |
+          :memo: New release pending ${{ steps.vars.outputs.version }}
+        body: |
+          # :cherry_blossom: Version `${{ steps.vars.outputs.version }}` ready to be release
+          Please review, approve and merge the release.
+          Merging this PR will not cause any deployment.
+
+          **If you want to deploy a release, please follow the documented deployment process.**
+
+          > [!NOTE]
+          > This is an **automated** pull request.
+          > **CHANGELOG.md** has been updated with the new release notes.
+        label: Release
+        draft: false
