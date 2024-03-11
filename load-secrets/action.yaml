@@ -28,8 +28,8 @@ runs:
       with:
         export-env: true
       env:
-        APP_ID: "op://Garajonai/Botanibit GH_SVC/App ID"
-        PRIVATE_KEY: "op://Garajonai/Botanibit GH_SVC/private key"
+        APP_ID: "op://Garajonai/Botanibit GH_APP/App ID"
+        PRIVATE_KEY: "op://Garajonai/Botanibit GH_APP/private key"
 
     - uses: actions/create-github-app-token@v1
       id: botanibit

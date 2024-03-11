@@ -2,7 +2,7 @@ name: Changelog
 inputs:
   stack:
     type: choice
-    description: 'Generate CHANGELOG.md and release process'
+    description: 'The stack to run the job on (go, npm)'
     options:
       - go
       - npm
