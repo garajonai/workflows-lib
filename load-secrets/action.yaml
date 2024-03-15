@@ -19,12 +19,12 @@ runs:
   using: "composite"
   steps:
     - name: Configure 1Password Service Account
-      uses: 1password/load-secrets-action/configure@v1.3.2
+      uses: 1password/load-secrets-action/configure@v1
       with:
         service-account-token: ${{ inputs.op-token }}
 
     - name: Load Botanibit credentials
-      uses: 1password/load-secrets-action@v1.3.2
+      uses: 1password/load-secrets-action@v1
       with:
         export-env: true
       env:
