@@ -9,7 +9,9 @@ inputs:
       - npm
       - all
       - none
-  op-token:
+  app-pk:
+    required: true
+  app-id:
     required: true
 outputs:
   token:
@@ -18,31 +20,18 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Configure 1Password Service Account
-      uses: 1password/load-secrets-action/configure@v1
-      with:
-        service-account-token: ${{ inputs.op-token }}
-
-    - name: Load Botanibit credentials
-      uses: 1password/load-secrets-action@v1
-      with:
-        export-env: true
-      env:
-        APP_ID: "op://Garajonai/Botanibit GH_APP/App ID"
-        PRIVATE_KEY: "op://Garajonai/Botanibit GH_APP/private key"
-
     - uses: actions/create-github-app-token@v1
       id: botanibit
       with:
-        app-id: ${{ env.APP_ID }}
-        private-key: ${{ env.PRIVATE_KEY }}
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.app-pk }}
         owner: ${{ github.repository_owner }}
 
     - name: Set up Git name and email
       shell: bash
       run: |
         git config --global user.name "botanibit[bot]"
-        git config --global user.email ${{env.APP_ID}}+botanibit[bot]@users.noreply.github.com
+        git config --global user.email ${{ inputs.app-id }}+botanibit[bot]@users.noreply.github.com
 
     - name: Set up Git with token for private go dependencies
       shell: bash
